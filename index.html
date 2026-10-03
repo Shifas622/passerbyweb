@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Vehicle QR - Send Alert</title>
+    <link rel="stylesheet" href="style.css">
+    <!-- Google Fonts for typography -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Material Icons -->
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+    
+    <!-- Firebase SDKs -->
+    <script type="module" src="app.js" defer></script>
+</head>
+<body>
+    <div class="app-container">
+        <header class="header">
+            <h1>Send Alert</h1>
+        </header>
+
+        <main class="content">
+            <!-- Loading State -->
+            <div id="loadingState" class="state-container">
+                <div class="spinner"></div>
+                <p>Loading vehicle details...</p>
+            </div>
+
+            <!-- Error State -->
+            <div id="errorState" class="state-container hidden">
+                <span class="material-icons error-icon">error_outline</span>
+                <h2 id="errorMessage">Vehicle not found</h2>
+                <p>Please check the QR code and try again.</p>
+            </div>
+
+            <!-- Vehicle Data State -->
+            <div id="vehicleState" class="hidden">
+                <div class="vehicle-card">
+                    <div class="vehicle-icon-wrapper">
+                        <span id="vehicleIcon" class="material-icons">directions_car</span>
+                    </div>
+                    <h2 id="vehicleNo" class="vehicle-no">LOADING...</h2>
+                    <p id="vehicleDetails" class="vehicle-details">Loading...</p>
+                </div>
+
+                <div class="alerts-section">
+                    <h3>What is the issue?</h3>
+                    <div class="alerts-grid">
+                        <button class="alert-btn" data-type="Emergency" data-message="Lights are ON">
+                            <span class="material-icons" style="color: #ffb300;">lightbulb</span>
+                            <span>Lights are ON</span>
+                        </button>
+                        <button class="alert-btn" data-type="Security" data-message="Window is open">
+                            <span class="material-icons" style="color: #1e88e5;">sensor_window</span>
+                            <span>Window is open</span>
+                        </button>
+                        <button class="alert-btn" data-type="Parking" data-message="Vehicle is blocking the way">
+                            <span class="material-icons" style="color: #e53935;">block</span>
+                            <span>Blocking way</span>
+                        </button>
+                        <button class="alert-btn" data-type="Other" data-message="Other issue">
+                            <span class="material-icons" style="color: #fb8c00;">warning</span>
+                            <span>Other issue</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </main>
+
+        <!-- Notification Toast -->
+        <div id="toast" class="toast hidden">
+            Alert sent successfully!
+        </div>
+    </div>
+</body>
+</html>
