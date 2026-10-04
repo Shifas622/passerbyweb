@@ -102,22 +102,20 @@ async function sendAlert(type, message) {
     ui.loading.querySelector('p').textContent = "Sending alert...";
 
     try {
+        const payload = {
+            vehicle_id: vehicleId,
+            vehicle_no: currentVehicleData.vehicle_no || 'Unknown',
+            owner_email: currentVehicleData.user_email || '', 
+            alert_type: type,
+            message: message,
+            is_read: false,
+            created_at: new Date().toISOString()
+        };
+
         // Save the alert in Supabase Database
-        const { data: alertData, error } = await supabase
+        const { error } = await supabase
             .from('alerts')
-            .insert([
-                {
-                    vehicle_id: vehicleId,
-                    vehicle_no: currentVehicleData.vehicle_no || 'Unknown',
-                    owner_email: currentVehicleData.user_email || '', 
-                    alert_type: type,
-                    message: message,
-                    is_read: false,
-                    created_at: new Date().toISOString()
-                }
-            ])
-            .select()
-            .single();
+            .insert([payload]);
 
         if (error) {
             throw error;
@@ -126,7 +124,7 @@ async function sendAlert(type, message) {
         // Trigger Push Notification via Supabase Edge Function
         try {
             await supabase.functions.invoke('send-fcm-notification', {
-                body: { record: alertData }
+                body: { record: payload }
             });
         } catch (fcmError) {
             console.error("FCM Trigger Error:", fcmError);
