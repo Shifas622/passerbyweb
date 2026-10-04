@@ -15,6 +15,7 @@ const vehicleId = urlParams.get('id');
 const ui = {
     loading: document.getElementById('loadingState'),
     error: document.getElementById('errorState'),
+    
     errorMsg: document.getElementById('errorMessage'),
     vehicle: document.getElementById('vehicleState'),
     
@@ -102,7 +103,7 @@ async function sendAlert(type, message) {
 
     try {
         // Save the alert in Supabase Database
-        const { error } = await supabase
+        const { data: alertData, error } = await supabase
             .from('alerts')
             .insert([
                 {
@@ -114,10 +115,21 @@ async function sendAlert(type, message) {
                     is_read: false,
                     created_at: new Date().toISOString()
                 }
-            ]);
+            ])
+            .select()
+            .single();
 
         if (error) {
             throw error;
+        }
+
+        // Trigger Push Notification via Supabase Edge Function
+        try {
+            await supabase.functions.invoke('send-fcm-notification', {
+                body: { record: alertData }
+            });
+        } catch (fcmError) {
+            console.error("FCM Trigger Error:", fcmError);
         }
 
         ui.loading.classList.add('hidden');
