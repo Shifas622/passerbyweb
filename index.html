@@ -10,7 +10,9 @@
     <!-- Material Icons -->
     <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
     
-    <!-- Firebase SDKs -->
+    <!-- Supabase JS Client & Environment Config -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="env.js"></script>
     <script type="module" src="app.js" defer></script>
 </head>
 <body>
@@ -43,40 +45,22 @@
                     <p id="vehicleDetails" class="vehicle-details">Loading...</p>
                 </div>
 
-                <div class="photo-section">
-                    <h3>1. Take a Photo as Proof <span style="color: red;">*</span></h3>
-                    <p class="instruction-text">A photo is required to unlock the alert buttons below.</p>
-                    
-                    <label for="cameraInput" class="camera-btn" id="cameraBtn">
-                        <span class="material-icons">photo_camera</span>
-                        <span>Take Photo</span>
-                    </label>
-                    <input type="file" id="cameraInput" accept="image/*" capture="environment" style="display: none;">
-                    
-                    <div id="photoPreviewContainer" class="hidden">
-                        <img id="photoPreview" alt="Proof Photo">
-                        <button id="removePhotoBtn" class="remove-btn">
-                            <span class="material-icons">close</span> Remove
-                        </button>
-                    </div>
-                </div>
-
                 <div class="alerts-section">
-                    <h3 id="alertsTitle" style="opacity: 0.5;">2. What is the issue?</h3>
+                    <h3>What is the issue?</h3>
                     <div class="alerts-grid">
-                        <button class="alert-btn" data-type="Emergency" data-message="Lights are ON" disabled>
+                        <button class="alert-btn" data-type="Emergency" data-message="Lights are ON">
                             <span class="material-icons" style="color: #ffb300;">lightbulb</span>
                             <span>Lights are ON</span>
                         </button>
-                        <button class="alert-btn" data-type="Security" data-message="Window is open" disabled>
+                        <button class="alert-btn" data-type="Security" data-message="Window is open">
                             <span class="material-icons" style="color: #1e88e5;">sensor_window</span>
                             <span>Window is open</span>
                         </button>
-                        <button class="alert-btn" data-type="Parking" data-message="Vehicle is blocking the way" disabled>
+                        <button class="alert-btn" data-type="Parking" data-message="Vehicle is blocking the way">
                             <span class="material-icons" style="color: #e53935;">block</span>
                             <span>Blocking way</span>
                         </button>
-                        <button class="alert-btn" data-type="Other" data-message="Other issue" disabled>
+                        <button class="alert-btn" data-type="Other" data-message="Other issue">
                             <span class="material-icons" style="color: #fb8c00;">warning</span>
                             <span>Other issue</span>
                         </button>
