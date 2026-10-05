@@ -24,7 +24,9 @@ const ui = {
     vIcon: document.getElementById('vehicleIcon'),
     
     alertBtns: document.querySelectorAll('.alert-btn'),
-    toast: document.getElementById('toast')
+    toast: document.getElementById('toast'),
+    proofImageInput: document.getElementById('proofImage'),
+    proofImageText: document.getElementById('proofImageText')
 };
 
 let currentVehicleData = null;
@@ -118,7 +120,32 @@ async function sendAlert(type, message) {
     ui.vehicle.classList.add('hidden');
     ui.loading.querySelector('p').textContent = "Sending alert...";
 
+    let proofImageUrl = null;
+
     try {
+        // Upload image if one is selected
+        if (ui.proofImageInput && ui.proofImageInput.files.length > 0) {
+            ui.loading.querySelector('p').textContent = "Uploading proof photo...";
+            const file = ui.proofImageInput.files[0];
+            const fileExt = file.name.split('.').pop();
+            const fileName = `${Date.now()}_${Math.random().toString(36).substring(2)}.${fileExt}`;
+            const filePath = `${vehicleId}/${fileName}`;
+            
+            const { data: uploadData, error: uploadError } = await supabase.storage
+                .from('alert_proofs')
+                .upload(filePath, file);
+                
+            if (!uploadError) {
+                const { data: { publicUrl } } = supabase.storage
+                    .from('alert_proofs')
+                    .getPublicUrl(filePath);
+                proofImageUrl = publicUrl;
+            } else {
+                console.error("Image upload failed:", uploadError);
+            }
+            ui.loading.querySelector('p').textContent = "Sending alert...";
+        }
+
         const payload = {
             vehicle_id: vehicleId,
             vehicle_no: currentVehicleData.vehicle_no || 'Unknown',
@@ -126,6 +153,7 @@ async function sendAlert(type, message) {
             alert_type: type,
             message: message,
             is_read: false,
+            proof_image_url: proofImageUrl,
             created_at: new Date().toISOString()
         };
 
@@ -178,6 +206,20 @@ ui.alertBtns.forEach(btn => {
         sendAlert(type, msg);
     });
 });
+
+if (ui.proofImageInput) {
+    ui.proofImageInput.addEventListener('change', (e) => {
+        if (e.target.files.length > 0) {
+            ui.proofImageText.textContent = 'Proof Photo Attached!';
+            ui.proofImageText.style.color = '#2e7d32';
+            ui.proofImageText.style.fontWeight = 'bold';
+        } else {
+            ui.proofImageText.textContent = 'Attach Proof Photo (Optional)';
+            ui.proofImageText.style.color = '#555';
+            ui.proofImageText.style.fontWeight = 'normal';
+        }
+    });
+}
 
 // Start the app when the script loads
 loadVehicle();

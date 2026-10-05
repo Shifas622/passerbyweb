@@ -47,6 +47,13 @@
 
                 <div class="alerts-section">
                     <h3>What is the issue?</h3>
+                    <div class="proof-section" style="margin-bottom: 15px; text-align: center;">
+                        <label for="proofImage" class="proof-label" style="display: inline-block; padding: 10px 15px; background: #f0f0f0; border-radius: 8px; cursor: pointer; color: #555; font-size: 14px; width: 100%; box-sizing: border-box; border: 1px dashed #ccc;">
+                            <span class="material-icons" style="vertical-align: middle; margin-right: 5px;">add_a_photo</span>
+                            <span id="proofImageText">Attach Proof Photo (Optional)</span>
+                        </label>
+                        <input type="file" id="proofImage" accept="image/*" capture="environment" style="display: none;">
+                    </div>
                     <div class="alerts-grid">
                         <button class="alert-btn" data-type="Emergency" data-message="Lights are ON">
                             <span class="material-icons" style="color: #ffb300;">lightbulb</span>
