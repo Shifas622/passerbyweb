@@ -70,7 +70,12 @@ function displayVehicle(data) {
     else if (data.category === "Truck") iconName = "local_shipping";
     else if (data.category === "Bus") iconName = "directions_bus";
     
-    ui.vIcon.textContent = iconName;
+    const iconWrapper = ui.vIcon.parentElement;
+    if (data.image_url) {
+        iconWrapper.innerHTML = `<img src="${data.image_url}" alt="Vehicle" style="width: 100%; height: 100%; border-radius: 50%; object-fit: cover;">`;
+    } else {
+        iconWrapper.innerHTML = `<span id="vehicleIcon" class="material-icons">${iconName}</span>`;
+    }
 
     ui.loading.classList.add('hidden');
     ui.error.classList.add('hidden');
@@ -93,6 +98,18 @@ async function sendAlert(type, message) {
     if (!supabase) {
         alert("Supabase is not configured.");
         return;
+    }
+
+    // Check cooldown before sending
+    const lastAlertTime = localStorage.getItem(`lastAlert_${vehicleId}`);
+    if (lastAlertTime) {
+        const timeDiff = new Date().getTime() - parseInt(lastAlertTime, 10);
+        const cooldownMs = 5 * 60 * 1000; // 5 minutes cooldown
+        if (timeDiff < cooldownMs) {
+            const remainingMin = Math.ceil((cooldownMs - timeDiff) / (60 * 1000));
+            alert(`Please wait ${remainingMin} minute(s) before sending another alert.`);
+            return;
+        }
     }
 
     // Disable buttons while sending
@@ -120,6 +137,9 @@ async function sendAlert(type, message) {
         if (error) {
             throw error;
         }
+
+        // Save the timestamp in localStorage for the cooldown
+        localStorage.setItem(`lastAlert_${vehicleId}`, new Date().getTime().toString());
 
         // Trigger Push Notification via Supabase Edge Function
         try {
