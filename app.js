@@ -26,7 +26,9 @@ const ui = {
     alertBtns: document.querySelectorAll('.alert-btn'),
     toast: document.getElementById('toast'),
     proofImageInput: document.getElementById('proofImage'),
-    proofImageText: document.getElementById('proofImageText')
+    proofImageText: document.getElementById('proofImageText'),
+    dndState: document.getElementById('dndState'),
+    alertsInputArea: document.getElementById('alertsInputArea')
 };
 
 let currentVehicleData = null;
@@ -82,6 +84,16 @@ function displayVehicle(data) {
     ui.loading.classList.add('hidden');
     ui.error.classList.add('hidden');
     ui.vehicle.classList.remove('hidden');
+
+    if (data.is_dnd_active) {
+        ui.dndState.classList.remove('hidden');
+        ui.alertsInputArea.classList.add('hidden');
+        document.getElementById('issueTitle').classList.add('hidden');
+    } else {
+        ui.dndState.classList.add('hidden');
+        ui.alertsInputArea.classList.remove('hidden');
+        document.getElementById('issueTitle').classList.remove('hidden');
+    }
 }
 
 function showError(msg) {

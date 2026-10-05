@@ -46,7 +46,13 @@
                 </div>
 
                 <div class="alerts-section">
-                    <h3>What is the issue?</h3>
+                    <h3 id="issueTitle">What is the issue?</h3>
+                    <div id="dndState" class="hidden" style="text-align: center; padding: 20px; background: #fff3e0; border-radius: 12px; margin-bottom: 20px;">
+                        <span class="material-icons" style="color: #ff9800; font-size: 32px; margin-bottom: 8px;">do_not_disturb_on</span>
+                        <h4 style="color: #e65100; margin: 0 0 5px 0;">Alerts Paused</h4>
+                        <p style="margin: 0; font-size: 14px; color: #f57c00;">The owner has temporarily disabled alerts for this vehicle.</p>
+                    </div>
+                    <div id="alertsInputArea">
                     <div class="proof-section" style="margin-bottom: 15px; text-align: center;">
                         <label for="proofImage" class="proof-label" style="display: inline-block; padding: 10px 15px; background: #f0f0f0; border-radius: 8px; cursor: pointer; color: #555; font-size: 14px; width: 100%; box-sizing: border-box; border: 1px dashed #ccc;">
                             <span class="material-icons" style="vertical-align: middle; margin-right: 5px;">add_a_photo</span>
@@ -72,6 +78,7 @@
                             <span>Other issue</span>
                         </button>
                     </div>
+                    </div> <!-- End of alertsInputArea -->
                 </div>
             </div>
         </main>
