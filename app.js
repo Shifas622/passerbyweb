@@ -29,7 +29,9 @@ const ui = {
     proofImageText: document.getElementById('proofImageText'),
     dndState: document.getElementById('dndState'),
     alertsInputArea: document.getElementById('alertsInputArea'),
-    captchaArea: document.getElementById('captchaArea')
+    captchaArea: document.getElementById('captchaArea'),
+    successArea: document.getElementById('successArea'),
+    requestChatBtn: document.getElementById('requestChatBtn')
 };
 
 let currentVehicleData = null;
@@ -204,11 +206,18 @@ async function sendAlert(type, message) {
 
         ui.loading.classList.add('hidden');
         ui.vehicle.classList.remove('hidden');
-        showToast();
         
-        setTimeout(() => {
-            window.location.href = `chat.html?alert_id=${newAlertId}&vehicle_no=${encodeURIComponent(currentVehicleData.vehicle_no || 'Unknown')}`;
-        }, 1500);
+        // Hide inputs and show success area instead of redirecting
+        ui.alertsInputArea.classList.add('hidden');
+        if (ui.captchaArea) ui.captchaArea.classList.add('hidden');
+        document.getElementById('issueTitle').classList.add('hidden');
+        
+        if (ui.successArea) ui.successArea.classList.remove('hidden');
+        
+        // Store alert ID globally so the request chat button can use it
+        window.currentAlertId = newAlertId;
+        
+        showToast();
     } catch (error) {
         console.error("Error sending alert:", error);
         alert("Failed to send alert: " + error.message);
@@ -234,6 +243,31 @@ ui.alertBtns.forEach(btn => {
         sendAlert(type, msg);
     });
 });
+
+if (ui.requestChatBtn) {
+    ui.requestChatBtn.addEventListener('click', async () => {
+        if (!window.currentAlertId) return;
+        ui.requestChatBtn.disabled = true;
+        
+        // Find the text span to update it
+        const textSpan = ui.requestChatBtn.querySelectorAll('span')[1];
+        if (textSpan) textSpan.textContent = 'Requesting...';
+        
+        try {
+            // Send the request message
+            await supabase.from('alert_messages').insert([{
+                alert_id: window.currentAlertId,
+                sender_type: 'passerby',
+                message: "I would like to chat with you regarding this alert. Can I communicate with you?"
+            }]);
+        } catch (e) {
+            console.error("Failed to send chat request message:", e);
+        }
+        
+        // Redirect to chat
+        window.location.href = `chat.html?alert_id=${window.currentAlertId}&vehicle_no=${encodeURIComponent(currentVehicleData.vehicle_no || 'Unknown')}`;
+    });
+}
 
 if (ui.proofImageInput) {
     ui.proofImageInput.addEventListener('change', (e) => {
