@@ -66,15 +66,42 @@ async function loadMessages() {
         ui.messages.innerHTML = '';
         if (data.length === 0) {
             ui.messages.innerHTML = `<div style="text-align: center; color: #666; font-size: 0.9rem; padding-top: 20px;">
-                Alert sent! You can send follow-up messages here.
+                Alert sent! Waiting for the owner to respond before you can chat.
             </div>`;
+            lockChatWaitingForOwner();
         } else {
-            data.forEach(msg => appendMessage(msg));
+            let ownerHasReplied = false;
+            data.forEach(msg => {
+                if (msg.sender_type === 'owner') ownerHasReplied = true;
+                appendMessage(msg);
+            });
+            
+            if (!ownerHasReplied) {
+                lockChatWaitingForOwner();
+            } else {
+                unlockChat();
+            }
         }
         scrollToBottom();
     } catch (err) {
         console.error("Error loading messages:", err);
     }
+}
+
+let isOwnerJoined = false;
+
+function lockChatWaitingForOwner() {
+    isOwnerJoined = false;
+    ui.input.disabled = true;
+    ui.sendBtn.disabled = true;
+    ui.input.placeholder = "Waiting for owner to reply...";
+}
+
+function unlockChat() {
+    isOwnerJoined = true;
+    ui.input.disabled = false;
+    ui.sendBtn.disabled = false;
+    ui.input.placeholder = "Type a message...";
 }
 
 function appendMessage(msg) {
@@ -90,6 +117,7 @@ function appendMessage(msg) {
         div.classList.add('message-passerby');
     } else {
         div.classList.add('message-owner');
+        unlockChat(); // Unlock when owner replies
     }
     
     div.textContent = msg.message;
