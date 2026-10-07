@@ -28,10 +28,12 @@ const ui = {
     proofImageInput: document.getElementById('proofImage'),
     proofImageText: document.getElementById('proofImageText'),
     dndState: document.getElementById('dndState'),
-    alertsInputArea: document.getElementById('alertsInputArea')
+    alertsInputArea: document.getElementById('alertsInputArea'),
+    captchaArea: document.getElementById('captchaArea')
 };
 
 let currentVehicleData = null;
+let isVerified = false;
 
 async function loadVehicle() {
     if (!vehicleId) {
@@ -88,11 +90,19 @@ function displayVehicle(data) {
     if (data.is_dnd_active) {
         ui.dndState.classList.remove('hidden');
         ui.alertsInputArea.classList.add('hidden');
+        if (ui.captchaArea) ui.captchaArea.classList.add('hidden');
         document.getElementById('issueTitle').classList.add('hidden');
     } else {
         ui.dndState.classList.add('hidden');
-        ui.alertsInputArea.classList.remove('hidden');
         document.getElementById('issueTitle').classList.remove('hidden');
+        
+        if (isVerified) {
+            ui.alertsInputArea.classList.remove('hidden');
+            if (ui.captchaArea) ui.captchaArea.classList.add('hidden');
+        } else {
+            ui.alertsInputArea.classList.add('hidden');
+            if (ui.captchaArea) ui.captchaArea.classList.remove('hidden');
+        }
     }
 }
 
@@ -170,9 +180,10 @@ async function sendAlert(type, message) {
         };
 
         // Save the alert in Supabase Database
-        const { error } = await supabase
+        const { data: alertData, error } = await supabase
             .from('alerts')
-            .insert([payload]);
+            .insert([payload])
+            .select();
 
         if (error) {
             throw error;
@@ -193,6 +204,13 @@ async function sendAlert(type, message) {
         ui.loading.classList.add('hidden');
         ui.vehicle.classList.remove('hidden');
         showToast();
+        
+        if (alertData && alertData.length > 0) {
+            const alertId = alertData[0].id;
+            setTimeout(() => {
+                window.location.href = `chat.html?alert_id=${alertId}&vehicle_no=${encodeURIComponent(currentVehicleData.vehicle_no || 'Unknown')}`;
+            }, 1500);
+        }
     } catch (error) {
         console.error("Error sending alert:", error);
         alert("Failed to send alert: " + error.message);
@@ -231,6 +249,71 @@ if (ui.proofImageInput) {
             ui.proofImageText.style.fontWeight = 'normal';
         }
     });
+}
+
+// Slide to Verify CAPTCHA Logic
+const sliderThumb = document.getElementById('sliderThumb');
+const sliderTrack = document.getElementById('sliderTrack');
+const sliderText = document.getElementById('sliderText');
+
+if (sliderThumb && sliderTrack) {
+    let isDragging = false;
+    let startX = 0;
+    let maxTranslate = 0;
+
+    const initSlider = () => {
+        maxTranslate = sliderTrack.offsetWidth - sliderThumb.offsetWidth;
+    };
+
+    const onStart = (e) => {
+        if (isVerified) return;
+        isDragging = true;
+        startX = e.type.includes('mouse') ? e.pageX : e.touches[0].pageX;
+        sliderThumb.style.transition = 'none';
+        initSlider();
+    };
+
+    const onMove = (e) => {
+        if (!isDragging || isVerified) return;
+        let currentX = e.type.includes('mouse') ? e.pageX : e.touches[0].pageX;
+        let diff = currentX - startX;
+        
+        if (diff < 0) diff = 0;
+        if (diff > maxTranslate) diff = maxTranslate;
+        
+        sliderThumb.style.transform = `translateX(${diff}px)`;
+        
+        if (diff >= maxTranslate - 5) {
+            isVerified = true;
+            isDragging = false;
+            sliderTrack.classList.add('verified');
+            sliderText.textContent = "Verified!";
+            sliderThumb.innerHTML = '<span class="material-icons">check</span>';
+            sliderThumb.style.transform = `translateX(${maxTranslate}px)`;
+            
+            setTimeout(() => {
+                ui.captchaArea.classList.add('hidden');
+                ui.alertsInputArea.classList.remove('hidden');
+            }, 800);
+        }
+    };
+
+    const onEnd = () => {
+        if (!isDragging || isVerified) return;
+        isDragging = false;
+        sliderThumb.style.transition = 'transform 0.3s ease';
+        sliderThumb.style.transform = 'translateX(0)';
+    };
+
+    sliderThumb.addEventListener('mousedown', onStart);
+    document.addEventListener('mousemove', onMove);
+    document.addEventListener('mouseup', onEnd);
+    
+    sliderThumb.addEventListener('touchstart', onStart, {passive: true});
+    document.addEventListener('touchmove', onMove, {passive: true});
+    document.addEventListener('touchend', onEnd);
+    
+    window.addEventListener('resize', initSlider);
 }
 
 // Start the app when the script loads

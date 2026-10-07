@@ -52,7 +52,15 @@
                         <h4 style="color: #e65100; margin: 0 0 5px 0;">Alerts Paused</h4>
                         <p style="margin: 0; font-size: 14px; color: #f57c00;">The owner has temporarily disabled alerts for this vehicle.</p>
                     </div>
-                    <div id="alertsInputArea">
+                    <div id="captchaArea" class="captcha-container">
+                        <div class="slider-track" id="sliderTrack">
+                            <div class="slider-text" id="sliderText">Slide to verify you are human</div>
+                            <div class="slider-thumb" id="sliderThumb">
+                                <span class="material-icons">arrow_forward</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div id="alertsInputArea" class="hidden">
                     <div class="proof-section" style="margin-bottom: 15px; text-align: center;">
                         <label for="proofImage" class="proof-label" style="display: inline-block; padding: 10px 15px; background: #f0f0f0; border-radius: 8px; cursor: pointer; color: #555; font-size: 14px; width: 100%; box-sizing: border-box; border: 1px dashed #ccc;">
                             <span class="material-icons" style="vertical-align: middle; margin-right: 5px;">add_a_photo</span>
