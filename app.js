@@ -255,11 +255,31 @@ if (ui.requestChatBtn) {
         
         try {
             // Send the request message
-            await supabase.from('alert_messages').insert([{
+            const { error } = await supabase.from('alert_messages').insert([{
                 alert_id: window.currentAlertId,
                 sender_type: 'passerby',
                 message: "I would like to chat with you regarding this alert. Can I communicate with you?"
             }]);
+            
+            if (error) {
+                console.error("Insert error:", error);
+            }
+
+            // Trigger Push Notification for Chat Request
+            try {
+                await supabase.functions.invoke('send-fcm-notification', {
+                    body: { 
+                        record: {
+                            owner_email: currentVehicleData.user_email || '',
+                            vehicle_no: currentVehicleData.vehicle_no || 'Unknown',
+                            alert_type: "Chat Request",
+                            message: "A passerby wants to communicate with you regarding your vehicle."
+                        } 
+                    }
+                });
+            } catch (fcmError) {
+                console.error("FCM Trigger Error:", fcmError);
+            }
         } catch (e) {
             console.error("Failed to send chat request message:", e);
         }
