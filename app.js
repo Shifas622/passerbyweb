@@ -168,7 +168,9 @@ async function sendAlert(type, message) {
             ui.loading.querySelector('p').textContent = "Sending alert...";
         }
 
+        const newAlertId = crypto.randomUUID();
         const payload = {
+            id: newAlertId,
             vehicle_id: vehicleId,
             vehicle_no: currentVehicleData.vehicle_no || 'Unknown',
             owner_email: currentVehicleData.user_email || '', 
@@ -179,11 +181,10 @@ async function sendAlert(type, message) {
             created_at: new Date().toISOString()
         };
 
-        // Save the alert in Supabase Database
-        const { data: alertData, error } = await supabase
+        // Save the alert in Supabase Database without calling .select() because passerby doesn't have SELECT permission on alerts
+        const { error } = await supabase
             .from('alerts')
-            .insert([payload])
-            .select();
+            .insert([payload]);
 
         if (error) {
             throw error;
@@ -205,12 +206,9 @@ async function sendAlert(type, message) {
         ui.vehicle.classList.remove('hidden');
         showToast();
         
-        if (alertData && alertData.length > 0) {
-            const alertId = alertData[0].id;
-            setTimeout(() => {
-                window.location.href = `chat.html?alert_id=${alertId}&vehicle_no=${encodeURIComponent(currentVehicleData.vehicle_no || 'Unknown')}`;
-            }, 1500);
-        }
+        setTimeout(() => {
+            window.location.href = `chat.html?alert_id=${newAlertId}&vehicle_no=${encodeURIComponent(currentVehicleData.vehicle_no || 'Unknown')}`;
+        }, 1500);
     } catch (error) {
         console.error("Error sending alert:", error);
         alert("Failed to send alert: " + error.message);
