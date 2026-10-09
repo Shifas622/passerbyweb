@@ -270,6 +270,7 @@ if (ui.requestChatBtn) {
                 await supabase.functions.invoke('send-fcm-notification', {
                     body: { 
                         record: {
+                            id: window.currentAlertId,
                             owner_email: currentVehicleData.user_email || '',
                             vehicle_no: currentVehicleData.vehicle_no || 'Unknown',
                             alert_type: "Chat Request",
