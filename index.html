@@ -89,15 +89,17 @@
                     </div> <!-- End of alertsInputArea -->
                     
                     <!-- Success Area -->
-                    <div id="successArea" class="hidden" style="text-align: center; padding: 20px; background: white; border-radius: 12px; box-shadow: 0 2px 10px rgba(0,0,0,0.05);">
-                        <span class="material-icons" style="color: #4caf50; font-size: 48px; margin-bottom: 10px;">check_circle</span>
-                        <h3 style="color: #2e7d32; margin-top: 0;">Alert Sent Successfully!</h3>
-                        <p style="color: #555;">The owner has been notified.</p>
-                        <hr style="border: 0; border-top: 1px solid #eee; margin: 20px 0;">
-                        <p style="color: #666; font-size: 0.9rem; margin-bottom: 15px;">Need to communicate further with the owner?</p>
-                        <button id="requestChatBtn" class="alert-btn" style="background: #2563eb; color: white; width: 100%; justify-content: center; border: none;">
-                            <span class="material-icons" style="color: white; margin-right: 8px;">chat</span>
-                            <span style="color: white; font-weight: bold;">Can I communicate with you?</span>
+                    <div id="successArea" class="hidden success-container">
+                        <div class="success-icon-wrapper">
+                            <span class="material-icons success-checkmark">check_circle</span>
+                        </div>
+                        <h3 class="success-title">Alert Sent Successfully!</h3>
+                        <p class="success-subtitle">The owner has been notified.</p>
+                        <hr class="success-divider">
+                        <p class="success-prompt">Need to communicate further with the owner?</p>
+                        <button id="requestChatBtn" class="btn-primary chat-request-btn">
+                            <span class="material-icons">chat</span>
+                            <span>Can I communicate with you?</span>
                         </button>
                     </div>
                 </div>
