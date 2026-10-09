@@ -3,7 +3,7 @@ const SUPABASE_URL = (window.ENV && window.ENV.SUPABASE_URL) || "https://qmykiks
 const SUPABASE_ANON_KEY = (window.ENV && window.ENV.SUPABASE_ANON_KEY) || "sb_publishable_8j8uBy1GzTatDitIuL6pdw_Z39IbMty";
 
 // Initialize Supabase Client
-const supabase = (window.supabase && SUPABASE_URL !== "YOUR_SUPABASE_URL") 
+const supabaseClient = (window.supabase && SUPABASE_URL !== "YOUR_SUPABASE_URL") 
     ? window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY) 
     : null;
 
@@ -22,7 +22,7 @@ const ui = {
 let subscription = null;
 
 async function initChat() {
-    if (!alertId || !supabase) {
+    if (!alertId || !supabaseClient) {
         ui.subtitle.textContent = "Error: Invalid chat session.";
         return;
     }
@@ -55,7 +55,7 @@ function disableChat() {
 
 async function loadMessages() {
     try {
-        const { data, error } = await supabase
+        const { data, error } = await supabaseClient
             .from('alert_messages')
             .select('*')
             .eq('alert_id', alertId)
@@ -146,7 +146,7 @@ async function sendMessage() {
             message: text
         };
 
-        const { error } = await supabase
+        const { error } = await supabaseClient
             .from('alert_messages')
             .insert([payload]);
 
@@ -168,7 +168,7 @@ async function sendMessage() {
 }
 
 function subscribeToMessages() {
-    subscription = supabase
+    subscription = supabaseClient
         .channel(`public:alert_messages:${alertId}`)
         .on('postgres_changes', { 
             event: 'INSERT', 
