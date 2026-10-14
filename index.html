@@ -98,7 +98,10 @@
         </div>
     </div>
 
-    <!-- Live Photo Required Alert Modal (Root of Body) -->
+    <!-- Native Live Camera Input (Directly under body for guaranteed browser activation) -->
+    <input type="file" id="liveCameraInput" accept="image/*" capture="environment" class="visually-hidden-camera-input">
+
+    <!-- Live Photo Confirmation Modal -->
     <div id="photoModal" class="modal-overlay hidden" role="dialog" aria-modal="true">
         <div class="modal-card">
             <div class="modal-header">
@@ -108,7 +111,7 @@
                     </div>
                     <div>
                         <h3 id="modalAlertTitle" class="modal-title">Selected Alert</h3>
-                        <p id="modalAlertSubtitle" class="modal-subtitle">Live photo verification required</p>
+                        <p id="modalAlertSubtitle" class="modal-subtitle">Live photo captured</p>
                     </div>
                 </div>
                 <button type="button" id="closeModalBtn" class="modal-close-btn" aria-label="Close modal">
@@ -123,43 +126,28 @@
                     <input type="text" id="customMessageInput" class="custom-input" placeholder="Describe the issue briefly..." maxlength="120">
                 </div>
 
-                <!-- Camera / Photo capture box -->
-                <div id="cameraTriggerBox" class="camera-trigger-box">
-                    <div id="photoPlaceholder" class="photo-placeholder">
-                        <div class="camera-icon-bubble">
-                            <span class="material-icons">add_a_photo</span>
-                        </div>
-                        <h4 class="camera-prompt-title">Tap to Take Live Photo</h4>
-                        <p class="camera-prompt-desc">Use your camera to capture proof of the vehicle</p>
-                        <span class="camera-badge"><span class="material-icons" style="font-size: 14px; margin-right: 4px;">camera_alt</span> Camera Required</span>
+                <!-- Preview of captured live photo -->
+                <div id="photoPreviewContainer" class="photo-preview-container">
+                    <img id="photoPreviewImg" src="" alt="Live Proof Preview">
+                    <div class="photo-preview-overlay">
+                        <button type="button" id="retakePhotoBtn" class="retake-btn">
+                            <span class="material-icons">refresh</span>
+                            <span>Retake Photo</span>
+                        </button>
                     </div>
-
-                    <!-- Preview shown after photo captured -->
-                    <div id="photoPreviewContainer" class="photo-preview-container hidden">
-                        <img id="photoPreviewImg" src="" alt="Live Proof Preview">
-                        <div class="photo-preview-overlay">
-                            <button type="button" id="retakePhotoBtn" class="retake-btn">
-                                <span class="material-icons">refresh</span>
-                                <span>Retake Photo</span>
-                            </button>
-                        </div>
-                    </div>
-
-                    <!-- Hidden live camera input -->
-                    <input type="file" id="livePhotoInput" accept="image/*" capture="environment" style="display: none;">
                 </div>
 
                 <div class="modal-notice">
                     <span class="material-icons notice-icon">verified_user</span>
-                    <span>Live photo is mandatory to notify the vehicle owner and prevent spam.</span>
+                    <span>Photo proof will be sent directly to the vehicle owner.</span>
                 </div>
             </div>
 
             <div class="modal-footer">
                 <button type="button" id="cancelAlertBtn" class="btn-cancel">Cancel</button>
-                <button type="button" id="confirmSendAlertBtn" class="btn-primary modal-send-btn" disabled>
+                <button type="button" id="confirmSendAlertBtn" class="btn-primary modal-send-btn">
                     <span class="material-icons" style="font-size: 18px; margin-right: 6px;">send</span>
-                    <span id="confirmSendText">Take Photo to Send</span>
+                    <span id="confirmSendText">Send Alert with Photo</span>
                 </button>
             </div>
         </div>

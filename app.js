@@ -41,12 +41,10 @@ const ui = {
     confirmSendText: document.getElementById('confirmSendText'),
     customMessageContainer: document.getElementById('customMessageContainer'),
     customMessageInput: document.getElementById('customMessageInput'),
-    cameraTriggerBox: document.getElementById('cameraTriggerBox'),
-    photoPlaceholder: document.getElementById('photoPlaceholder'),
     photoPreviewContainer: document.getElementById('photoPreviewContainer'),
     photoPreviewImg: document.getElementById('photoPreviewImg'),
     retakePhotoBtn: document.getElementById('retakePhotoBtn'),
-    livePhotoInput: document.getElementById('livePhotoInput')
+    liveCameraInput: document.getElementById('liveCameraInput')
 };
 
 let currentVehicleData = null;
@@ -123,31 +121,59 @@ function showError(msg) {
     ui.error.classList.remove('hidden');
 }
 
-// === LIVE PHOTO MODAL FLOW ===
+// === DIRECT CAMERA & LIVE PHOTO ALERT FLOW ===
 
-function openPhotoModal(type, defaultMessage) {
-    currentPendingAlert = { type, defaultMessage };
-    capturedPhotoFile = null;
+// When passerby clicks ANY alert button, launch the camera app directly!
+ui.alertBtns.forEach(btn => {
+    btn.addEventListener('click', () => {
+        const type = btn.getAttribute('data-type');
+        const msg = btn.getAttribute('data-message');
 
-    // Reset file input & preview
-    if (ui.livePhotoInput) ui.livePhotoInput.value = '';
-    if (ui.photoPreviewImg) ui.photoPreviewImg.src = '';
-    if (ui.photoPreviewContainer) ui.photoPreviewContainer.classList.add('hidden');
-    if (ui.photoPlaceholder) ui.photoPlaceholder.classList.remove('hidden');
+        currentPendingAlert = { type, defaultMessage: msg };
+        capturedPhotoFile = null;
 
-    // Configure icons and titles
+        // Reset file input so re-capturing triggers change reliably
+        if (ui.liveCameraInput) {
+            ui.liveCameraInput.value = '';
+            // Direct, synchronous click inside user event handler triggers camera app
+            ui.liveCameraInput.click();
+        }
+    });
+});
+
+// When photo is taken in camera app and user taps OK, camera returns here
+if (ui.liveCameraInput) {
+    ui.liveCameraInput.addEventListener('change', (e) => {
+        if (e.target.files && e.target.files.length > 0) {
+            capturedPhotoFile = e.target.files[0];
+
+            const reader = new FileReader();
+            reader.onload = (event) => {
+                if (ui.photoPreviewImg) {
+                    ui.photoPreviewImg.src = event.target.result;
+                }
+                showConfirmationModal();
+            };
+            reader.readAsDataURL(capturedPhotoFile);
+        }
+    });
+}
+
+function showConfirmationModal() {
+    if (!currentPendingAlert) return;
+
     let iconName = "warning";
-    if (type === "Emergency") iconName = "lightbulb";
-    else if (type === "Security") iconName = "sensor_window";
-    else if (type === "Parking") iconName = "block";
+    if (currentPendingAlert.type === "Emergency") iconName = "lightbulb";
+    else if (currentPendingAlert.type === "Security") iconName = "sensor_window";
+    else if (currentPendingAlert.type === "Parking") iconName = "block";
     else iconName = "warning";
 
     if (ui.modalAlertIcon) ui.modalAlertIcon.textContent = iconName;
-    if (ui.modalAlertTitle) ui.modalAlertTitle.textContent = defaultMessage;
-    if (ui.modalAlertSubtitle) ui.modalAlertSubtitle.textContent = `Live photo proof is required for ${type} alert`;
+    if (ui.modalAlertTitle) ui.modalAlertTitle.textContent = currentPendingAlert.defaultMessage;
+    if (ui.modalAlertSubtitle) ui.modalAlertSubtitle.textContent = `Photo captured for ${currentPendingAlert.type} alert`;
 
-    // Handle "Other" custom description field
-    if (type === "Other" && ui.customMessageContainer) {
+    // Handle "Other" custom description
+    if (currentPendingAlert.type === "Other" && ui.customMessageContainer) {
         ui.customMessageContainer.classList.remove('hidden');
         if (ui.customMessageInput) {
             ui.customMessageInput.value = '';
@@ -157,26 +183,15 @@ function openPhotoModal(type, defaultMessage) {
         ui.customMessageContainer.classList.add('hidden');
     }
 
-    // Require live photo before allowing sending
     if (ui.confirmSendAlertBtn) {
-        ui.confirmSendAlertBtn.disabled = true;
+        ui.confirmSendAlertBtn.disabled = false;
     }
     if (ui.confirmSendText) {
-        ui.confirmSendText.textContent = "Take Photo to Send";
+        ui.confirmSendText.textContent = "Send Alert with Photo";
     }
 
-    // Show modal immediately
     if (ui.photoModal) {
         ui.photoModal.classList.remove('hidden');
-    }
-
-    // Trigger live photo camera prompt directly from user click
-    try {
-        if (ui.livePhotoInput) {
-            ui.livePhotoInput.click();
-        }
-    } catch (err) {
-        console.log("Camera auto-prompt notice:", err);
     }
 }
 
@@ -186,48 +201,16 @@ function closePhotoModal() {
     }
     currentPendingAlert = null;
     capturedPhotoFile = null;
-    if (ui.livePhotoInput) ui.livePhotoInput.value = '';
+    if (ui.liveCameraInput) ui.liveCameraInput.value = '';
 }
 
-// Open camera when camera trigger box is clicked
-if (ui.cameraTriggerBox) {
-    ui.cameraTriggerBox.addEventListener('click', (e) => {
-        if (e.target.closest('#retakePhotoBtn')) return;
-        if (ui.livePhotoInput) ui.livePhotoInput.click();
-    });
-}
-
-// Retake photo button
+// Retake button inside modal re-opens camera app
 if (ui.retakePhotoBtn) {
     ui.retakePhotoBtn.addEventListener('click', (e) => {
         e.stopPropagation();
-        if (ui.livePhotoInput) ui.livePhotoInput.click();
-    });
-}
-
-// Handle captured live photo
-if (ui.livePhotoInput) {
-    ui.livePhotoInput.addEventListener('change', (e) => {
-        if (e.target.files && e.target.files.length > 0) {
-            capturedPhotoFile = e.target.files[0];
-
-            const reader = new FileReader();
-            reader.onload = (event) => {
-                if (ui.photoPreviewImg) ui.photoPreviewImg.src = event.target.result;
-                if (ui.photoPlaceholder) ui.photoPlaceholder.classList.add('hidden');
-                if (ui.photoPreviewContainer) ui.photoPreviewContainer.classList.remove('hidden');
-
-                // Enable send button
-                if (ui.confirmSendAlertBtn) ui.confirmSendAlertBtn.disabled = false;
-                if (ui.confirmSendText) ui.confirmSendText.textContent = "Send Alert with Photo";
-            };
-            reader.readAsDataURL(capturedPhotoFile);
-        } else {
-            capturedPhotoFile = null;
-            if (ui.photoPreviewContainer) ui.photoPreviewContainer.classList.add('hidden');
-            if (ui.photoPlaceholder) ui.photoPlaceholder.classList.remove('hidden');
-            if (ui.confirmSendAlertBtn) ui.confirmSendAlertBtn.disabled = true;
-            if (ui.confirmSendText) ui.confirmSendText.textContent = "Take Photo to Send";
+        if (ui.liveCameraInput) {
+            ui.liveCameraInput.value = '';
+            ui.liveCameraInput.click();
         }
     });
 }
@@ -369,15 +352,6 @@ function showToast() {
         ui.toast.classList.add('hidden');
     }, 3000);
 }
-
-// Clicking alert button pops up live photo modal
-ui.alertBtns.forEach(btn => {
-    btn.addEventListener('click', () => {
-        const type = btn.getAttribute('data-type');
-        const msg = btn.getAttribute('data-message');
-        openPhotoModal(type, msg);
-    });
-});
 
 if (ui.requestChatBtn) {
     ui.requestChatBtn.addEventListener('click', async () => {

@@ -316,6 +316,18 @@ body {
     font-weight: 600;
 }
 
+/* Direct Native Camera Trigger Input */
+.visually-hidden-camera-input {
+    position: fixed;
+    top: -500px;
+    left: -500px;
+    width: 1px;
+    height: 1px;
+    opacity: 0.01;
+    pointer-events: none;
+    z-index: -9999;
+}
+
 /* === LIVE PHOTO MODAL & CAMERA UI === */
 .modal-overlay {
     position: fixed;
