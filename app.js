@@ -25,15 +25,33 @@ const ui = {
     
     alertBtns: document.querySelectorAll('.alert-btn'),
     toast: document.getElementById('toast'),
-    proofImageInput: document.getElementById('proofImage'),
-    proofImageText: document.getElementById('proofImageText'),
     dndState: document.getElementById('dndState'),
     alertsInputArea: document.getElementById('alertsInputArea'),
     successArea: document.getElementById('successArea'),
-    requestChatBtn: document.getElementById('requestChatBtn')
+    requestChatBtn: document.getElementById('requestChatBtn'),
+
+    // Live Photo Modal & Camera Elements
+    photoModal: document.getElementById('photoModal'),
+    modalAlertTitle: document.getElementById('modalAlertTitle'),
+    modalAlertSubtitle: document.getElementById('modalAlertSubtitle'),
+    modalAlertIcon: document.getElementById('modalAlertIcon'),
+    closeModalBtn: document.getElementById('closeModalBtn'),
+    cancelAlertBtn: document.getElementById('cancelAlertBtn'),
+    confirmSendAlertBtn: document.getElementById('confirmSendAlertBtn'),
+    confirmSendText: document.getElementById('confirmSendText'),
+    customMessageContainer: document.getElementById('customMessageContainer'),
+    customMessageInput: document.getElementById('customMessageInput'),
+    cameraTriggerBox: document.getElementById('cameraTriggerBox'),
+    photoPlaceholder: document.getElementById('photoPlaceholder'),
+    photoPreviewContainer: document.getElementById('photoPreviewContainer'),
+    photoPreviewImg: document.getElementById('photoPreviewImg'),
+    retakePhotoBtn: document.getElementById('retakePhotoBtn'),
+    livePhotoInput: document.getElementById('livePhotoInput')
 };
 
 let currentVehicleData = null;
+let currentPendingAlert = null; // { type, message }
+let capturedPhotoFile = null;
 
 async function loadVehicle() {
     if (!vehicleId) {
@@ -105,7 +123,145 @@ function showError(msg) {
     ui.error.classList.remove('hidden');
 }
 
-async function sendAlert(type, message) {
+// === LIVE PHOTO MODAL FLOW ===
+
+function openPhotoModal(type, defaultMessage) {
+    currentPendingAlert = { type, defaultMessage };
+    capturedPhotoFile = null;
+
+    // Reset file input & preview
+    if (ui.livePhotoInput) ui.livePhotoInput.value = '';
+    if (ui.photoPreviewImg) ui.photoPreviewImg.src = '';
+    if (ui.photoPreviewContainer) ui.photoPreviewContainer.classList.add('hidden');
+    if (ui.photoPlaceholder) ui.photoPlaceholder.classList.remove('hidden');
+
+    // Configure icons and titles
+    let iconName = "warning";
+    if (type === "Emergency") iconName = "lightbulb";
+    else if (type === "Security") iconName = "sensor_window";
+    else if (type === "Parking") iconName = "block";
+    else iconName = "warning";
+
+    if (ui.modalAlertIcon) ui.modalAlertIcon.textContent = iconName;
+    if (ui.modalAlertTitle) ui.modalAlertTitle.textContent = defaultMessage;
+    if (ui.modalAlertSubtitle) ui.modalAlertSubtitle.textContent = `Live photo proof is required for ${type} alert`;
+
+    // Handle "Other" custom description field
+    if (type === "Other" && ui.customMessageContainer) {
+        ui.customMessageContainer.classList.remove('hidden');
+        if (ui.customMessageInput) {
+            ui.customMessageInput.value = '';
+            setTimeout(() => ui.customMessageInput.focus(), 200);
+        }
+    } else if (ui.customMessageContainer) {
+        ui.customMessageContainer.classList.add('hidden');
+    }
+
+    // Require live photo before allowing sending
+    if (ui.confirmSendAlertBtn) {
+        ui.confirmSendAlertBtn.disabled = true;
+    }
+    if (ui.confirmSendText) {
+        ui.confirmSendText.textContent = "Take Photo to Send";
+    }
+
+    // Show modal immediately
+    if (ui.photoModal) {
+        ui.photoModal.classList.remove('hidden');
+    }
+
+    // Trigger live photo camera prompt directly from user click
+    try {
+        if (ui.livePhotoInput) {
+            ui.livePhotoInput.click();
+        }
+    } catch (err) {
+        console.log("Camera auto-prompt notice:", err);
+    }
+}
+
+function closePhotoModal() {
+    if (ui.photoModal) {
+        ui.photoModal.classList.add('hidden');
+    }
+    currentPendingAlert = null;
+    capturedPhotoFile = null;
+    if (ui.livePhotoInput) ui.livePhotoInput.value = '';
+}
+
+// Open camera when camera trigger box is clicked
+if (ui.cameraTriggerBox) {
+    ui.cameraTriggerBox.addEventListener('click', (e) => {
+        if (e.target.closest('#retakePhotoBtn')) return;
+        if (ui.livePhotoInput) ui.livePhotoInput.click();
+    });
+}
+
+// Retake photo button
+if (ui.retakePhotoBtn) {
+    ui.retakePhotoBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        if (ui.livePhotoInput) ui.livePhotoInput.click();
+    });
+}
+
+// Handle captured live photo
+if (ui.livePhotoInput) {
+    ui.livePhotoInput.addEventListener('change', (e) => {
+        if (e.target.files && e.target.files.length > 0) {
+            capturedPhotoFile = e.target.files[0];
+
+            const reader = new FileReader();
+            reader.onload = (event) => {
+                if (ui.photoPreviewImg) ui.photoPreviewImg.src = event.target.result;
+                if (ui.photoPlaceholder) ui.photoPlaceholder.classList.add('hidden');
+                if (ui.photoPreviewContainer) ui.photoPreviewContainer.classList.remove('hidden');
+
+                // Enable send button
+                if (ui.confirmSendAlertBtn) ui.confirmSendAlertBtn.disabled = false;
+                if (ui.confirmSendText) ui.confirmSendText.textContent = "Send Alert with Photo";
+            };
+            reader.readAsDataURL(capturedPhotoFile);
+        } else {
+            capturedPhotoFile = null;
+            if (ui.photoPreviewContainer) ui.photoPreviewContainer.classList.add('hidden');
+            if (ui.photoPlaceholder) ui.photoPlaceholder.classList.remove('hidden');
+            if (ui.confirmSendAlertBtn) ui.confirmSendAlertBtn.disabled = true;
+            if (ui.confirmSendText) ui.confirmSendText.textContent = "Take Photo to Send";
+        }
+    });
+}
+
+// Modal Dismiss Listeners
+if (ui.closeModalBtn) ui.closeModalBtn.addEventListener('click', closePhotoModal);
+if (ui.cancelAlertBtn) ui.cancelAlertBtn.addEventListener('click', closePhotoModal);
+if (ui.photoModal) {
+    ui.photoModal.addEventListener('click', (e) => {
+        if (e.target === ui.photoModal) closePhotoModal();
+    });
+}
+
+// Send Alert with Live Photo
+async function executeSendAlert() {
+    if (!currentPendingAlert) return;
+
+    if (!capturedPhotoFile) {
+        alert("Please take a live photo of the vehicle to send this alert.");
+        return;
+    }
+
+    // Check cooldown
+    const lastAlertTime = localStorage.getItem(`lastAlert_${vehicleId}`);
+    if (lastAlertTime) {
+        const timeDiff = new Date().getTime() - parseInt(lastAlertTime, 10);
+        const cooldownMs = 2 * 60 * 1000;
+        if (timeDiff < cooldownMs) {
+            const remainingMin = Math.ceil((cooldownMs - timeDiff) / (60 * 1000));
+            alert(`Please wait ${remainingMin} minute(s) before sending another alert.`);
+            return;
+        }
+    }
+
     if (!currentVehicleData) {
         alert("Vehicle data not found.");
         return;
@@ -116,76 +272,65 @@ async function sendAlert(type, message) {
         return;
     }
 
-    // Check cooldown before sending
-    const lastAlertTime = localStorage.getItem(`lastAlert_${vehicleId}`);
-    if (lastAlertTime) {
-        const timeDiff = new Date().getTime() - parseInt(lastAlertTime, 10);
-        const cooldownMs = 5 * 60 * 1000; // 5 minutes cooldown
-        if (timeDiff < cooldownMs) {
-            const remainingMin = Math.ceil((cooldownMs - timeDiff) / (60 * 1000));
-            alert(`Please wait ${remainingMin} minute(s) before sending another alert.`);
-            return;
-        }
+    let finalMessage = currentPendingAlert.defaultMessage;
+    if (currentPendingAlert.type === "Other" && ui.customMessageInput && ui.customMessageInput.value.trim()) {
+        finalMessage = ui.customMessageInput.value.trim();
     }
 
-    // Disable buttons while sending
-    ui.alertBtns.forEach(btn => btn.disabled = true);
-    ui.loading.classList.remove('hidden');
-    ui.vehicle.classList.add('hidden');
-    ui.loading.querySelector('p').textContent = "Sending alert...";
+    // Disable buttons & show loading
+    if (ui.confirmSendAlertBtn) ui.confirmSendAlertBtn.disabled = true;
+    if (ui.confirmSendText) ui.confirmSendText.textContent = "Uploading & Sending...";
 
     let proofImageUrl = null;
 
     try {
-        // Upload image if one is selected
-        if (ui.proofImageInput && ui.proofImageInput.files.length > 0) {
-            ui.loading.querySelector('p').textContent = "Uploading proof photo...";
-            const file = ui.proofImageInput.files[0];
-            const fileExt = file.name.split('.').pop();
-            const fileName = `${Date.now()}_${Math.random().toString(36).substring(2)}.${fileExt}`;
-            const filePath = `${vehicleId}/${fileName}`;
-            
-            const { data: uploadData, error: uploadError } = await supabase.storage
-                .from('alert_proofs')
-                .upload(filePath, file);
-                
-            if (!uploadError) {
-                const { data: { publicUrl } } = supabase.storage
-                    .from('alert_proofs')
-                    .getPublicUrl(filePath);
-                proofImageUrl = publicUrl;
-            } else {
-                console.error("Image upload failed:", uploadError);
-            }
-            ui.loading.querySelector('p').textContent = "Sending alert...";
+        // 1. Upload live photo to Supabase Storage 'alert_proofs'
+        const file = capturedPhotoFile;
+        const fileExt = file.name ? file.name.split('.').pop() : 'jpg';
+        const fileName = `${Date.now()}_${Math.random().toString(36).substring(2)}.${fileExt}`;
+        const filePath = `${vehicleId}/${fileName}`;
+
+        const { data: uploadData, error: uploadError } = await supabase.storage
+            .from('alert_proofs')
+            .upload(filePath, file);
+
+        if (uploadError) {
+            console.error("Storage upload error:", uploadError);
+            throw new Error("Failed to upload live photo: " + uploadError.message);
         }
 
+        const { data: { publicUrl } } = supabase.storage
+            .from('alert_proofs')
+            .getPublicUrl(filePath);
+
+        proofImageUrl = publicUrl;
+
+        // 2. Insert alert record into Supabase Database
         const newAlertId = crypto.randomUUID();
         const payload = {
             id: newAlertId,
             vehicle_id: vehicleId,
             vehicle_no: currentVehicleData.vehicle_no || 'Unknown',
             owner_email: currentVehicleData.user_email || '', 
-            alert_type: type,
-            message: message,
+            alert_type: currentPendingAlert.type,
+            message: finalMessage,
             is_read: false,
             proof_image_url: proofImageUrl,
             created_at: new Date().toISOString()
         };
 
-        // Save the alert in Supabase Database without calling .select() because passerby doesn't have SELECT permission on alerts
-        const { error } = await supabase
+        const { error: insertError } = await supabase
             .from('alerts')
             .insert([payload]);
 
-        if (error) {
-            throw error;
+        if (insertError) {
+            throw insertError;
         }
 
-        // Save the timestamp in localStorage for the cooldown
+        // Store cooldown timestamp
         localStorage.setItem(`lastAlert_${vehicleId}`, new Date().getTime().toString());
 
-        // Trigger Push Notification via Supabase Edge Function
+        // 3. Trigger FCM Push Notification
         try {
             await supabase.functions.invoke('send-fcm-notification', {
                 body: { record: payload }
@@ -194,28 +339,28 @@ async function sendAlert(type, message) {
             console.error("FCM Trigger Error:", fcmError);
         }
 
-        ui.loading.classList.add('hidden');
-        ui.vehicle.classList.remove('hidden');
-        
-        // Hide inputs and show success area instead of redirecting
+        // Close modal and show success screen
+        closePhotoModal();
+
         ui.alertsInputArea.classList.add('hidden');
-        if (ui.captchaArea) ui.captchaArea.classList.add('hidden');
-        document.getElementById('issueTitle').classList.add('hidden');
-        
+        const issueTitle = document.getElementById('issueTitle');
+        if (issueTitle) issueTitle.classList.add('hidden');
+
         if (ui.successArea) ui.successArea.classList.remove('hidden');
-        
-        // Store alert ID globally so the request chat button can use it
+
         window.currentAlertId = newAlertId;
-        
         showToast();
+
     } catch (error) {
-        console.error("Error sending alert:", error);
-        alert("Failed to send alert: " + error.message);
-        ui.loading.classList.add('hidden');
-        ui.vehicle.classList.remove('hidden');
-    } finally {
-        ui.alertBtns.forEach(btn => btn.disabled = false);
+        console.error("Error sending alert with photo:", error);
+        alert("Failed to send alert: " + (error.message || error));
+        if (ui.confirmSendAlertBtn) ui.confirmSendAlertBtn.disabled = false;
+        if (ui.confirmSendText) ui.confirmSendText.textContent = "Send Alert with Photo";
     }
+}
+
+if (ui.confirmSendAlertBtn) {
+    ui.confirmSendAlertBtn.addEventListener('click', executeSendAlert);
 }
 
 function showToast() {
@@ -225,12 +370,12 @@ function showToast() {
     }, 3000);
 }
 
-// Event Listeners for the buttons
+// Clicking alert button pops up live photo modal
 ui.alertBtns.forEach(btn => {
     btn.addEventListener('click', () => {
         const type = btn.getAttribute('data-type');
         const msg = btn.getAttribute('data-message');
-        sendAlert(type, msg);
+        openPhotoModal(type, msg);
     });
 });
 
@@ -239,12 +384,10 @@ if (ui.requestChatBtn) {
         if (!window.currentAlertId) return;
         ui.requestChatBtn.disabled = true;
         
-        // Find the text span to update it
         const textSpan = ui.requestChatBtn.querySelectorAll('span')[1];
         if (textSpan) textSpan.textContent = 'Requesting...';
         
         try {
-            // Send the request message
             const { error } = await supabase.from('alert_messages').insert([{
                 alert_id: window.currentAlertId,
                 sender_type: 'passerby',
@@ -255,7 +398,6 @@ if (ui.requestChatBtn) {
                 console.error("Insert error:", error);
             }
 
-            // Trigger Push Notification for Chat Request
             try {
                 await supabase.functions.invoke('send-fcm-notification', {
                     body: { 
@@ -275,26 +417,9 @@ if (ui.requestChatBtn) {
             console.error("Failed to send chat request message:", e);
         }
         
-        // Redirect to chat
         window.location.href = `chat.html?alert_id=${window.currentAlertId}&vehicle_no=${encodeURIComponent(currentVehicleData.vehicle_no || 'Unknown')}`;
     });
 }
-
-if (ui.proofImageInput) {
-    ui.proofImageInput.addEventListener('change', (e) => {
-        if (e.target.files.length > 0) {
-            ui.proofImageText.textContent = 'Proof Photo Attached!';
-            ui.proofImageText.style.color = '#2e7d32';
-            ui.proofImageText.style.fontWeight = 'bold';
-        } else {
-            ui.proofImageText.textContent = 'Attach Proof Photo (Optional)';
-            ui.proofImageText.style.color = '#555';
-            ui.proofImageText.style.fontWeight = 'normal';
-        }
-    });
-}
-
-
 
 // Start the app when the script loads
 loadVehicle();

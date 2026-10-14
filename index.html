@@ -54,13 +54,6 @@
                     </div>
 
                     <div id="alertsInputArea" class="hidden">
-                    <div class="proof-section" style="margin-bottom: 15px; text-align: center;">
-                        <label for="proofImage" class="proof-label" style="display: inline-block; padding: 10px 15px; background: #f0f0f0; border-radius: 8px; cursor: pointer; color: #555; font-size: 14px; width: 100%; box-sizing: border-box; border: 1px dashed #ccc;">
-                            <span class="material-icons" style="vertical-align: middle; margin-right: 5px;">add_a_photo</span>
-                            <span id="proofImageText">Attach Proof Photo (Optional)</span>
-                        </label>
-                        <input type="file" id="proofImage" accept="image/*" capture="environment" style="display: none;">
-                    </div>
                     <div class="alerts-grid">
                         <button class="alert-btn" data-type="Emergency" data-message="Lights are ON">
                             <span class="material-icons" style="color: #ffb300;">lightbulb</span>
@@ -102,6 +95,73 @@
         <!-- Notification Toast -->
         <div id="toast" class="toast hidden">
             Alert sent successfully!
+        </div>
+    </div>
+
+    <!-- Live Photo Required Alert Modal (Root of Body) -->
+    <div id="photoModal" class="modal-overlay hidden" role="dialog" aria-modal="true">
+        <div class="modal-card">
+            <div class="modal-header">
+                <div class="modal-title-group">
+                    <div id="modalAlertIconWrapper" class="modal-alert-icon-wrapper">
+                        <span id="modalAlertIcon" class="material-icons">photo_camera</span>
+                    </div>
+                    <div>
+                        <h3 id="modalAlertTitle" class="modal-title">Selected Alert</h3>
+                        <p id="modalAlertSubtitle" class="modal-subtitle">Live photo verification required</p>
+                    </div>
+                </div>
+                <button type="button" id="closeModalBtn" class="modal-close-btn" aria-label="Close modal">
+                    <span class="material-icons">close</span>
+                </button>
+            </div>
+
+            <div class="modal-body">
+                <!-- Custom message input for "Other" issue -->
+                <div id="customMessageContainer" class="custom-message-container hidden">
+                    <label for="customMessageInput" class="input-label">Issue Details</label>
+                    <input type="text" id="customMessageInput" class="custom-input" placeholder="Describe the issue briefly..." maxlength="120">
+                </div>
+
+                <!-- Camera / Photo capture box -->
+                <div id="cameraTriggerBox" class="camera-trigger-box">
+                    <div id="photoPlaceholder" class="photo-placeholder">
+                        <div class="camera-icon-bubble">
+                            <span class="material-icons">add_a_photo</span>
+                        </div>
+                        <h4 class="camera-prompt-title">Tap to Take Live Photo</h4>
+                        <p class="camera-prompt-desc">Use your camera to capture proof of the vehicle</p>
+                        <span class="camera-badge"><span class="material-icons" style="font-size: 14px; margin-right: 4px;">camera_alt</span> Camera Required</span>
+                    </div>
+
+                    <!-- Preview shown after photo captured -->
+                    <div id="photoPreviewContainer" class="photo-preview-container hidden">
+                        <img id="photoPreviewImg" src="" alt="Live Proof Preview">
+                        <div class="photo-preview-overlay">
+                            <button type="button" id="retakePhotoBtn" class="retake-btn">
+                                <span class="material-icons">refresh</span>
+                                <span>Retake Photo</span>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Hidden live camera input -->
+                    <input type="file" id="livePhotoInput" accept="image/*" capture="environment" style="display: none;">
+                </div>
+
+                <div class="modal-notice">
+                    <span class="material-icons notice-icon">verified_user</span>
+                    <span>Live photo is mandatory to notify the vehicle owner and prevent spam.</span>
+                </div>
+            </div>
+
+            <div class="modal-footer">
+                <button type="button" id="cancelAlertBtn" class="btn-cancel">Cancel</button>
+                <button type="button" id="confirmSendAlertBtn" class="btn-primary modal-send-btn" disabled>
+                    <span class="material-icons" style="font-size: 18px; margin-right: 6px;">send</span>
+                    <span id="confirmSendText">Take Photo to Send</span>
+                </button>
+            </div>
         </div>
     </div>
 </body>
