@@ -467,71 +467,82 @@ body {
     box-shadow: 0 0 0 3px rgba(129, 140, 248, 0.2);
 }
 
-.camera-trigger-box {
-    border: 2px dashed rgba(129, 140, 248, 0.4);
-    border-radius: 18px;
-    padding: 24px 16px;
-    text-align: center;
-    background: rgba(129, 140, 248, 0.03);
-    cursor: pointer;
-    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-.camera-trigger-box:hover {
-    border-color: #818cf8;
-    background: rgba(129, 140, 248, 0.08);
-    transform: translateY(-2px);
-    box-shadow: 0 8px 25px rgba(79, 70, 229, 0.15);
-}
-
-.camera-icon-bubble {
-    width: 58px;
-    height: 58px;
-    margin: 0 auto 12px;
-    border-radius: 50%;
-    background: linear-gradient(135deg, rgba(79, 70, 229, 0.25), rgba(124, 58, 237, 0.25));
-    border: 1px solid rgba(129, 140, 248, 0.4);
+/* In-Browser Live Camera Viewfinder (Zero RAM Crash) */
+.camera-viewfinder-container {
+    position: relative;
+    width: 100%;
+    height: 240px;
+    background: #000;
+    border-radius: 16px;
+    overflow: hidden;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
+    border: 1px solid rgba(255, 255, 255, 0.15);
     display: flex;
     align-items: center;
     justify-content: center;
-    color: #a78bfa;
-    box-shadow: 0 0 20px rgba(129, 140, 248, 0.2);
-    transition: transform 0.3s ease;
 }
 
-.camera-trigger-box:hover .camera-icon-bubble {
-    transform: scale(1.08);
-    color: #c4b5fd;
+.camera-video {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    background: #000;
 }
 
-.camera-icon-bubble .material-icons {
-    font-size: 30px;
+.viewfinder-controls {
+    position: absolute;
+    bottom: 12px;
+    left: 0;
+    right: 0;
+    display: flex;
+    justify-content: center;
+    z-index: 10;
 }
 
-.camera-prompt-title {
-    font-size: 1.05rem;
+.snap-photo-btn {
+    background: var(--primary-gradient);
+    color: white;
+    border: none;
+    padding: 10px 22px;
+    border-radius: 30px;
+    font-size: 0.95rem;
     font-weight: 600;
-    color: #f1f5f9;
-    margin-bottom: 6px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    box-shadow: 0 4px 18px rgba(79, 70, 229, 0.6);
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-.camera-prompt-desc {
-    font-size: 0.85rem;
-    color: #94a3b8;
-    margin-bottom: 12px;
-    line-height: 1.4;
+.snap-photo-btn:hover {
+    transform: scale(1.05);
+    box-shadow: 0 6px 24px rgba(79, 70, 229, 0.8);
 }
 
-.camera-badge {
+.camera-fallback-container {
+    border: 2px dashed rgba(129, 140, 248, 0.35);
+    border-radius: 16px;
+    padding: 24px 16px;
+    text-align: center;
+    background: rgba(129, 140, 248, 0.04);
+}
+
+.btn-secondary {
+    background: rgba(255, 255, 255, 0.08);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    color: #e2e8f0;
+    border-radius: 10px;
+    cursor: pointer;
     display: inline-flex;
     align-items: center;
-    background: rgba(79, 70, 229, 0.25);
-    border: 1px solid rgba(129, 140, 248, 0.3);
-    color: #c7d2fe;
-    font-size: 0.76rem;
-    font-weight: 600;
-    padding: 4px 12px;
-    border-radius: 20px;
+    justify-content: center;
+    transition: all 0.2s ease;
+}
+
+.btn-secondary:hover {
+    background: rgba(255, 255, 255, 0.15);
+    color: white;
 }
 
 .photo-preview-container {

@@ -30,7 +30,7 @@ const ui = {
     successArea: document.getElementById('successArea'),
     requestChatBtn: document.getElementById('requestChatBtn'),
 
-    // Live Photo Modal & Camera Elements
+    // Live Photo Modal & Viewfinder Elements
     photoModal: document.getElementById('photoModal'),
     modalAlertTitle: document.getElementById('modalAlertTitle'),
     modalAlertSubtitle: document.getElementById('modalAlertSubtitle'),
@@ -41,15 +41,22 @@ const ui = {
     confirmSendText: document.getElementById('confirmSendText'),
     customMessageContainer: document.getElementById('customMessageContainer'),
     customMessageInput: document.getElementById('customMessageInput'),
+    
+    cameraViewfinderContainer: document.getElementById('cameraViewfinderContainer'),
+    cameraVideo: document.getElementById('cameraVideo'),
+    snapPhotoBtn: document.getElementById('snapPhotoBtn'),
     photoPreviewContainer: document.getElementById('photoPreviewContainer'),
     photoPreviewImg: document.getElementById('photoPreviewImg'),
     retakePhotoBtn: document.getElementById('retakePhotoBtn'),
+    cameraFallbackContainer: document.getElementById('cameraFallbackContainer'),
+    fallbackCameraBtn: document.getElementById('fallbackCameraBtn'),
     liveCameraInput: document.getElementById('liveCameraInput')
 };
 
 let currentVehicleData = null;
 let currentPendingAlert = null; // { type, message }
 let capturedPhotoFile = null;
+let activeCameraStream = null;
 
 async function loadVehicle() {
     if (!vehicleId) {
@@ -121,98 +128,188 @@ function showError(msg) {
     ui.error.classList.remove('hidden');
 }
 
-// === DIRECT CAMERA & LIVE PHOTO ALERT FLOW ===
+// === IN-BROWSER LIVE CAMERA & ALERT FLOW (ZERO RAM CRASH) ===
 
-// When passerby clicks ANY alert button, launch the camera app directly!
+// Open modal and start live camera when any alert button is clicked
 ui.alertBtns.forEach(btn => {
     btn.addEventListener('click', () => {
         const type = btn.getAttribute('data-type');
         const msg = btn.getAttribute('data-message');
 
         currentPendingAlert = { type, defaultMessage: msg };
-        capturedPhotoFile = null;
 
-        // Reset file input so re-capturing triggers change reliably
-        if (ui.liveCameraInput) {
-            ui.liveCameraInput.value = '';
-            // Direct, synchronous click inside user event handler triggers camera app
-            ui.liveCameraInput.click();
+        let iconName = "warning";
+        if (type === "Emergency") iconName = "lightbulb";
+        else if (type === "Security") iconName = "sensor_window";
+        else if (type === "Parking") iconName = "block";
+        else iconName = "warning";
+
+        if (ui.modalAlertIcon) ui.modalAlertIcon.textContent = iconName;
+        if (ui.modalAlertTitle) ui.modalAlertTitle.textContent = msg;
+        if (ui.modalAlertSubtitle) ui.modalAlertSubtitle.textContent = `Take a live photo for ${type} alert`;
+
+        if (type === "Other" && ui.customMessageContainer) {
+            ui.customMessageContainer.classList.remove('hidden');
+            if (ui.customMessageInput) {
+                ui.customMessageInput.value = '';
+                setTimeout(() => ui.customMessageInput.focus(), 200);
+            }
+        } else if (ui.customMessageContainer) {
+            ui.customMessageContainer.classList.add('hidden');
         }
+
+        if (ui.photoModal) {
+            ui.photoModal.classList.remove('hidden');
+        }
+
+        // Start live camera stream inside the browser
+        startLiveCamera();
     });
 });
 
-// When photo is taken in camera app and user taps OK, camera returns here
+// Start rear camera stream directly in browser
+async function startLiveCamera() {
+    stopLiveCamera();
+    capturedPhotoFile = null;
+
+    if (ui.cameraViewfinderContainer) ui.cameraViewfinderContainer.classList.remove('hidden');
+    if (ui.photoPreviewContainer) ui.photoPreviewContainer.classList.add('hidden');
+    if (ui.cameraFallbackContainer) ui.cameraFallbackContainer.classList.add('hidden');
+    if (ui.confirmSendAlertBtn) ui.confirmSendAlertBtn.disabled = true;
+    if (ui.confirmSendText) ui.confirmSendText.textContent = "Take Photo to Send";
+
+    try {
+        if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+            throw new Error("getUserMedia not supported by browser");
+        }
+
+        // Controlled resolution avoids Android RAM pressure
+        const constraints = {
+            video: {
+                facingMode: { ideal: "environment" },
+                width: { ideal: 1280, max: 1920 },
+                height: { ideal: 720, max: 1080 }
+            },
+            audio: false
+        };
+
+        activeCameraStream = await navigator.mediaDevices.getUserMedia(constraints);
+        if (ui.cameraVideo) {
+            ui.cameraVideo.srcObject = activeCameraStream;
+            await ui.cameraVideo.play();
+        }
+    } catch (err) {
+        console.warn("Live camera viewfinder unavailable, enabling fallback:", err);
+        stopLiveCamera();
+        if (ui.cameraViewfinderContainer) ui.cameraViewfinderContainer.classList.add('hidden');
+        if (ui.cameraFallbackContainer) ui.cameraFallbackContainer.classList.remove('hidden');
+    }
+}
+
+// Stop camera stream to free hardware resources
+function stopLiveCamera() {
+    if (activeCameraStream) {
+        activeCameraStream.getTracks().forEach(track => {
+            try { track.stop(); } catch (e) {}
+        });
+        activeCameraStream = null;
+    }
+    if (ui.cameraVideo) {
+        ui.cameraVideo.srcObject = null;
+    }
+}
+
+// Snap photo from live video onto lightweight canvas
+function capturePhotoFromStream() {
+    if (!ui.cameraVideo || !activeCameraStream) return;
+
+    try {
+        const video = ui.cameraVideo;
+        const width = video.videoWidth || 1280;
+        const height = video.videoHeight || 720;
+
+        const canvas = document.createElement('canvas');
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(video, 0, 0, width, height);
+
+        canvas.toBlob((blob) => {
+            if (!blob) return;
+
+            capturedPhotoFile = new File([blob], `alert_proof_${Date.now()}.jpg`, { type: 'image/jpeg' });
+            if (ui.photoPreviewImg) {
+                ui.photoPreviewImg.src = URL.createObjectURL(blob);
+            }
+
+            // Switch from live stream to preview
+            if (ui.cameraViewfinderContainer) ui.cameraViewfinderContainer.classList.add('hidden');
+            if (ui.photoPreviewContainer) ui.photoPreviewContainer.classList.remove('hidden');
+
+            // Enable send button
+            if (ui.confirmSendAlertBtn) ui.confirmSendAlertBtn.disabled = false;
+            if (ui.confirmSendText) ui.confirmSendText.textContent = "Send Alert with Photo";
+
+            // Stop camera hardware stream immediately to free memory
+            stopLiveCamera();
+        }, 'image/jpeg', 0.82);
+
+    } catch (err) {
+        console.error("Failed to capture photo:", err);
+    }
+}
+
+// Shutter button inside live viewfinder
+if (ui.snapPhotoBtn) {
+    ui.snapPhotoBtn.addEventListener('click', capturePhotoFromStream);
+}
+
+// Retake button inside preview
+if (ui.retakePhotoBtn) {
+    ui.retakePhotoBtn.addEventListener('click', () => {
+        startLiveCamera();
+    });
+}
+
+// Fallback upload button if camera permission blocked
+if (ui.fallbackCameraBtn) {
+    ui.fallbackCameraBtn.addEventListener('click', () => {
+        if (ui.liveCameraInput) {
+            ui.liveCameraInput.value = '';
+            ui.liveCameraInput.click();
+        }
+    });
+}
+
 if (ui.liveCameraInput) {
     ui.liveCameraInput.addEventListener('change', (e) => {
         if (e.target.files && e.target.files.length > 0) {
             capturedPhotoFile = e.target.files[0];
-
             const reader = new FileReader();
             reader.onload = (event) => {
                 if (ui.photoPreviewImg) {
                     ui.photoPreviewImg.src = event.target.result;
                 }
-                showConfirmationModal();
+                if (ui.cameraFallbackContainer) ui.cameraFallbackContainer.classList.add('hidden');
+                if (ui.cameraViewfinderContainer) ui.cameraViewfinderContainer.classList.add('hidden');
+                if (ui.photoPreviewContainer) ui.photoPreviewContainer.classList.remove('hidden');
+
+                if (ui.confirmSendAlertBtn) ui.confirmSendAlertBtn.disabled = false;
+                if (ui.confirmSendText) ui.confirmSendText.textContent = "Send Alert with Photo";
             };
             reader.readAsDataURL(capturedPhotoFile);
         }
     });
 }
 
-function showConfirmationModal() {
-    if (!currentPendingAlert) return;
-
-    let iconName = "warning";
-    if (currentPendingAlert.type === "Emergency") iconName = "lightbulb";
-    else if (currentPendingAlert.type === "Security") iconName = "sensor_window";
-    else if (currentPendingAlert.type === "Parking") iconName = "block";
-    else iconName = "warning";
-
-    if (ui.modalAlertIcon) ui.modalAlertIcon.textContent = iconName;
-    if (ui.modalAlertTitle) ui.modalAlertTitle.textContent = currentPendingAlert.defaultMessage;
-    if (ui.modalAlertSubtitle) ui.modalAlertSubtitle.textContent = `Photo captured for ${currentPendingAlert.type} alert`;
-
-    // Handle "Other" custom description
-    if (currentPendingAlert.type === "Other" && ui.customMessageContainer) {
-        ui.customMessageContainer.classList.remove('hidden');
-        if (ui.customMessageInput) {
-            ui.customMessageInput.value = '';
-            setTimeout(() => ui.customMessageInput.focus(), 200);
-        }
-    } else if (ui.customMessageContainer) {
-        ui.customMessageContainer.classList.add('hidden');
-    }
-
-    if (ui.confirmSendAlertBtn) {
-        ui.confirmSendAlertBtn.disabled = false;
-    }
-    if (ui.confirmSendText) {
-        ui.confirmSendText.textContent = "Send Alert with Photo";
-    }
-
-    if (ui.photoModal) {
-        ui.photoModal.classList.remove('hidden');
-    }
-}
-
 function closePhotoModal() {
+    stopLiveCamera();
     if (ui.photoModal) {
         ui.photoModal.classList.add('hidden');
     }
     currentPendingAlert = null;
     capturedPhotoFile = null;
     if (ui.liveCameraInput) ui.liveCameraInput.value = '';
-}
-
-// Retake button inside modal re-opens camera app
-if (ui.retakePhotoBtn) {
-    ui.retakePhotoBtn.addEventListener('click', (e) => {
-        e.stopPropagation();
-        if (ui.liveCameraInput) {
-            ui.liveCameraInput.value = '';
-            ui.liveCameraInput.click();
-        }
-    });
 }
 
 // Modal Dismiss Listeners

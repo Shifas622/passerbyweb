@@ -98,8 +98,8 @@
         </div>
     </div>
 
-    <!-- Native Live Camera Input (Directly under body for guaranteed browser activation) -->
-    <input type="file" id="liveCameraInput" accept="image/*" capture="environment" class="visually-hidden-camera-input">
+    <!-- Fallback file input (no memory-intensive capture attribute) -->
+    <input type="file" id="liveCameraInput" accept="image/*" class="visually-hidden-camera-input">
 
     <!-- Live Photo Confirmation Modal -->
     <div id="photoModal" class="modal-overlay hidden" role="dialog" aria-modal="true">
@@ -111,7 +111,7 @@
                     </div>
                     <div>
                         <h3 id="modalAlertTitle" class="modal-title">Selected Alert</h3>
-                        <p id="modalAlertSubtitle" class="modal-subtitle">Live photo captured</p>
+                        <p id="modalAlertSubtitle" class="modal-subtitle">Take a live photo of the vehicle</p>
                     </div>
                 </div>
                 <button type="button" id="closeModalBtn" class="modal-close-btn" aria-label="Close modal">
@@ -126,8 +126,19 @@
                     <input type="text" id="customMessageInput" class="custom-input" placeholder="Describe the issue briefly..." maxlength="120">
                 </div>
 
-                <!-- Preview of captured live photo -->
-                <div id="photoPreviewContainer" class="photo-preview-container">
+                <!-- 1. Live Camera Viewfinder (In-Browser Camera - Zero RAM Crash) -->
+                <div id="cameraViewfinderContainer" class="camera-viewfinder-container">
+                    <video id="cameraVideo" autoplay playsinline muted class="camera-video"></video>
+                    <div class="viewfinder-controls">
+                        <button type="button" id="snapPhotoBtn" class="snap-photo-btn">
+                            <span class="material-icons">photo_camera</span>
+                            <span>Take Photo</span>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- 2. Preview shown after photo is taken -->
+                <div id="photoPreviewContainer" class="photo-preview-container hidden">
                     <img id="photoPreviewImg" src="" alt="Live Proof Preview">
                     <div class="photo-preview-overlay">
                         <button type="button" id="retakePhotoBtn" class="retake-btn">
@@ -137,17 +148,27 @@
                     </div>
                 </div>
 
+                <!-- 3. Fallback box if camera permission denied / unsupported -->
+                <div id="cameraFallbackContainer" class="camera-fallback-container hidden">
+                    <span class="material-icons" style="font-size: 38px; color: #818cf8; margin-bottom: 6px;">add_a_photo</span>
+                    <p style="font-size: 0.85rem; color: #94a3b8; margin-bottom: 10px;">Camera access paused</p>
+                    <button type="button" id="fallbackCameraBtn" class="btn-secondary" style="padding: 8px 16px; font-size: 0.85rem;">
+                        <span class="material-icons" style="font-size: 16px; margin-right: 4px;">camera_alt</span>
+                        <span>Choose / Take Photo</span>
+                    </button>
+                </div>
+
                 <div class="modal-notice">
                     <span class="material-icons notice-icon">verified_user</span>
-                    <span>Photo proof will be sent directly to the vehicle owner.</span>
+                    <span>Live photo proof is sent directly to the vehicle owner.</span>
                 </div>
             </div>
 
             <div class="modal-footer">
                 <button type="button" id="cancelAlertBtn" class="btn-cancel">Cancel</button>
-                <button type="button" id="confirmSendAlertBtn" class="btn-primary modal-send-btn">
+                <button type="button" id="confirmSendAlertBtn" class="btn-primary modal-send-btn" disabled>
                     <span class="material-icons" style="font-size: 18px; margin-right: 6px;">send</span>
-                    <span id="confirmSendText">Send Alert with Photo</span>
+                    <span id="confirmSendText">Snap Photo to Send</span>
                 </button>
             </div>
         </div>
