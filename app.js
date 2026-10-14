@@ -70,11 +70,13 @@ async function loadVehicle() {
     }
 
     try {
-        const { data, error } = await supabase
-            .from('vehicles')
-            .select('*')
-            .eq('id', vehicleId)
-            .single();
+        let query = supabase.from('vehicles').select('*');
+        if (vehicleId.includes('-') && vehicleId.length === 36) {
+            query = query.eq('id', vehicleId);
+        } else {
+            query = query.or(`id.eq.${vehicleId},vehicle_no.eq.${vehicleId}`);
+        }
+        const { data, error } = await query.maybeSingle();
 
         if (error || !data) {
             console.error("Fetch error:", error);
